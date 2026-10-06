@@ -38,9 +38,10 @@ final class AlarmStore {
             catch (JSONException error) { throw new IllegalStateException("Unable to encode alarm", error); }
             maxId = Math.max(maxId, alarm.id);
         }
-        SharedPreferences.Editor editor = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit();
+        SharedPreferences prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
         editor.putString(KEY_ALARMS, array.toString());
-        editor.putInt(KEY_NEXT_ID, Math.max(maxId + 1, 1));
+        editor.putInt(KEY_NEXT_ID, Math.max(prefs.getInt(KEY_NEXT_ID, 1), Math.max(maxId + 1, 1)));
         editor.apply();
         AlarmScheduler.scheduleAll(context);
     }

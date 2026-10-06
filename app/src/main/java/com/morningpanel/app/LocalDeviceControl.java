@@ -8,6 +8,7 @@ import android.provider.Settings;
 import android.view.WindowManager;
 
 import org.json.JSONObject;
+import org.json.JSONArray;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -56,6 +57,7 @@ final class LocalDeviceControl {
         String name = command.optString("command", "");
         boolean success = false;
         String message = "不支持的命令";
+        JSONObject resultData = null;
         if ("wake".equals(name)) {
             wake(context);
             success = true;
@@ -70,6 +72,62 @@ final class LocalDeviceControl {
             boolean snooze = "snooze_alarm".equals(name);
             success = controlAlarm(context, snooze);
             message = success ? (snooze ? "闹钟已贪睡 10 分钟" : "闹钟已停止") : "当前没有正在响铃的闹钟";
+        } else if ("get_alarms".equals(name) || "add_alarm".equals(name)
+                || "update_alarm".equals(name) || "delete_alarm".equals(name)) {
+            try {
+                if ("add_alarm".equals(name)) {
+                    AlarmItem item = alarmFromCommand(context, command, AlarmStore.nextId(context), null);
+                    java.util.ArrayList<AlarmItem> alarms = new java.util.ArrayList<>(AlarmStore.get(context));
+                    alarms.add(item);
+                    AlarmStore.save(context, alarms);
+                } else if ("update_alarm".equals(name)) {
+                    int id = command.optInt("id", -1);
+                    java.util.ArrayList<AlarmItem> alarms = new java.util.ArrayList<>(AlarmStore.get(context));
+                    boolean found = false;
+                    for (int i = 0; i < alarms.size(); i++) if (alarms.get(i).id == id) {
+                        alarms.set(i, alarmFromCommand(context, command, id, alarms.get(i)));
+                        found = true;
+                        break;
+                    }
+                    if (!found) throw new IllegalArgumentException("找不到闹钟 ID " + id);
+                    AlarmStore.save(context, alarms);
+                } else if ("delete_alarm".equals(name)) {
+                    int id = command.optInt("id", -1);
+                    java.util.ArrayList<AlarmItem> alarms = new java.util.ArrayList<>(AlarmStore.get(context));
+                    boolean removed = false;
+                    for (int i = alarms.size() - 1; i >= 0; i--) if (alarms.get(i).id == id) {
+                        alarms.remove(i);
+                        removed = true;
+                    }
+                    if (!removed) throw new IllegalArgumentException("找不到闹钟 ID " + id);
+                    AlarmStore.save(context, alarms);
+                }
+                resultData = alarmList(context);
+                success = true;
+                message = "get_alarms".equals(name) ? "已读取闹钟" : "闹钟已更新";
+            } catch (Exception error) { message = error.getMessage() == null ? "闹钟操作失败" : error.getMessage(); }
+        } else if ("get_rss_config".equals(name) || "set_rss_config".equals(name)
+                || "refresh_rss".equals(name)) {
+            try {
+                if ("set_rss_config".equals(name)) {
+                    JSONArray sources = command.optJSONArray("sources");
+                    if (sources == null) throw new IllegalArgumentException("sources 必须是 URL 列表");
+                    StringBuilder urls = new StringBuilder();
+                    for (int i = 0; i < sources.length(); i++) {
+                        String url = sources.optString(i, "").trim();
+                        if (url.isEmpty()) continue;
+                        if (!url.startsWith("http://") && !url.startsWith("https://"))
+                            throw new IllegalArgumentException("RSS 地址必须使用 http 或 https");
+                        if (urls.length() > 0) urls.append('\n');
+                        urls.append(url);
+                    }
+                    AppPrefs.setRssUrl(context, urls.toString());
+                }
+                if ("refresh_rss".equals(name) || "set_rss_config".equals(name)) MainActivity.requestRssRefresh(context);
+                resultData = rssConfig(context);
+                success = true;
+                message = "refresh_rss".equals(name) ? "已请求 RSS 刷新" : "已读取 RSS 配置";
+            } catch (Exception error) { message = error.getMessage() == null ? "RSS 操作失败" : error.getMessage(); }
         }
         JSONObject result = new JSONObject();
         try {
@@ -78,8 +136,45 @@ final class LocalDeviceControl {
             result.put("message", message);
             result.put("request_id", command.optString("request_id", ""));
             result.put("updated_at", System.currentTimeMillis());
+            if (resultData != null) result.put("data", resultData);
         } catch (org.json.JSONException ignored) { }
         return result;
+    }
+
+    private static AlarmItem alarmFromCommand(Context context, JSONObject command, int id, AlarmItem old) {
+        int hour = command.has("hour") ? command.optInt("hour", -1) : old == null ? -1 : old.hour;
+        int minute = command.has("minute") ? command.optInt("minute", -1) : old == null ? -1 : old.minute;
+        int repeatMask = command.has("repeat_mask") ? command.optInt("repeat_mask", 0) : old == null ? 0 : old.repeatMask;
+        int scheduleMode = command.has("schedule_mode") ? command.optInt("schedule_mode", 0) : old == null ? 0 : old.scheduleMode;
+        String label = command.has("label") ? command.optString("label", "闹钟") : old == null ? "闹钟" : old.label;
+        boolean enabled = command.has("enabled") ? command.optBoolean("enabled", true) : old == null || old.enabled;
+        boolean makeup = command.has("ring_on_makeup_workdays") ? command.optBoolean("ring_on_makeup_workdays", false) : old != null && old.ringOnMakeupWorkdays;
+        if (hour < 0 || hour > 23 || minute < 0 || minute > 59) throw new IllegalArgumentException("请提供有效的 hour (0–23) 和 minute (0–59)");
+        if (repeatMask < 0 || repeatMask > 127) throw new IllegalArgumentException("repeat_mask 必须在 0–127 之间");
+        return new AlarmItem(id, hour, minute, label, repeatMask, enabled, scheduleMode, makeup);
+    }
+
+    private static JSONObject alarmList(Context context) throws Exception {
+        JSONObject data = new JSONObject();
+        JSONArray alarms = new JSONArray();
+        for (AlarmItem alarm : AlarmStore.get(context)) {
+            JSONObject item = new JSONObject();
+            item.put("id", alarm.id).put("hour", alarm.hour).put("minute", alarm.minute)
+                    .put("label", alarm.label).put("repeat_mask", alarm.repeatMask)
+                    .put("enabled", alarm.enabled).put("schedule_mode", alarm.scheduleMode)
+                    .put("ring_on_makeup_workdays", alarm.ringOnMakeupWorkdays);
+            alarms.put(item);
+        }
+        data.put("alarms", alarms);
+        return data;
+    }
+
+    private static JSONObject rssConfig(Context context) throws Exception {
+        JSONObject data = new JSONObject();
+        JSONArray sources = new JSONArray();
+        for (AppPrefs.RssSource source : AppPrefs.rssSources(context)) if (!source.url.isEmpty()) sources.put(source.url);
+        data.put("rss_sources", sources);
+        return data;
     }
 
     static boolean wake(Context context) {

@@ -121,6 +121,19 @@ final class AppPrefs {
         preferences(c).edit().putString("rss_sources", encoded.toString())
                 .putString("rss_url", legacy.toString()).apply();
     }
+
+    static void cacheRss(Context c, JSONArray articles, long refreshedAt, String error) {
+        preferences(c).edit().putString("rss_articles", articles == null ? "[]" : articles.toString())
+                .putLong("rss_refreshed_at", refreshedAt).putString("rss_refresh_error", error == null ? "" : error).apply();
+    }
+
+    static JSONArray cachedRssArticles(Context c) {
+        try { return new JSONArray(preferences(c).getString("rss_articles", "[]")); }
+        catch (JSONException ignored) { return new JSONArray(); }
+    }
+
+    static long rssRefreshedAt(Context c) { return preferences(c).getLong("rss_refreshed_at", 0L); }
+    static String rssRefreshError(Context c) { return preferences(c).getString("rss_refresh_error", ""); }
     private static final String DEFAULT_RSS = "https://sspai.com/feed\nhttps://www.ifanr.com/feed/\nhttps://www.ithome.com/rss/";
     static String haHomeEntities(Context c) { return preferences(c).getString("ha_home_entities", ""); }
     static void setHaHomeEntities(Context c, String entities) { preferences(c).edit().putString("ha_home_entities", entities.trim()).apply(); }

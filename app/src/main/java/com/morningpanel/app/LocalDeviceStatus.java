@@ -70,7 +70,14 @@ final class LocalDeviceStatus {
             long nextAlarmAt = Long.MAX_VALUE;
             long now = System.currentTimeMillis();
             List<AlarmItem> alarms = AlarmStore.get(context);
+            JSONArray alarmList = new JSONArray();
             for (AlarmItem alarm : alarms) {
+                JSONObject item = new JSONObject();
+                item.put("id", alarm.id).put("hour", alarm.hour).put("minute", alarm.minute)
+                        .put("label", alarm.label).put("repeat_mask", alarm.repeatMask)
+                        .put("enabled", alarm.enabled).put("schedule_mode", alarm.scheduleMode)
+                        .put("ring_on_makeup_workdays", alarm.ringOnMakeupWorkdays);
+                alarmList.put(item);
                 if (!alarm.enabled) continue;
                 long trigger = AlarmScheduler.nextTrigger(context, alarm, now);
                 if (trigger > 0 && trigger < nextAlarmAt) {
@@ -78,6 +85,15 @@ final class LocalDeviceStatus {
                     nextAlarmAt = trigger;
                 }
             }
+            status.put("alarms", alarmList);
+            JSONArray rssSources = new JSONArray();
+            for (AppPrefs.RssSource source : AppPrefs.rssSources(context)) {
+                if (!source.url.isEmpty()) rssSources.put(source.url);
+            }
+            status.put("rss_sources", rssSources);
+            status.put("rss_articles", AppPrefs.cachedRssArticles(context));
+            status.put("rss_refreshed_at", AppPrefs.rssRefreshedAt(context));
+            status.put("rss_refresh_error", AppPrefs.rssRefreshError(context));
             if (nextAlarm == null) {
                 status.put("next_alarm", JSONObject.NULL);
                 status.put("next_alarm_label", "");

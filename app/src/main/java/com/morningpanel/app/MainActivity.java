@@ -65,6 +65,7 @@ public class MainActivity extends Activity {
     static final String ACTION_SHOW_ALARM = "com.morningpanel.app.SHOW_ALARM";
     static final String ACTION_SHOW_MESSAGE = "com.morningpanel.app.SHOW_MESSAGE";
     static final String ACTION_WAKE_SCREEN = "com.morningpanel.app.WAKE_SCREEN";
+    static final String ACTION_REFRESH_RSS = "com.morningpanel.app.REFRESH_RSS";
     private static final int REQUEST_EXPORT = 4101;
     private static final int REQUEST_IMPORT = 4102;
     private static final int INK = Color.rgb(39, 48, 53);
@@ -320,6 +321,23 @@ public class MainActivity extends Activity {
             messageMode = false;
             if (allowRebuild) setContentView(buildScreen());
             applyKeepScreenAwake(true);
+            return;
+        }
+        if (ACTION_REFRESH_RSS.equals(action)) {
+            messageMode = false;
+            if (allowRebuild) setContentView(buildScreen());
+            refreshRss();
+        }
+    }
+
+    static void requestRssRefresh(android.content.Context context) {
+        MainActivity activity = visibleInstance;
+        if (activity != null) {
+            activity.runOnUiThread(() -> activity.refreshRss());
+        } else {
+            context.startActivity(new Intent(context, MainActivity.class)
+                    .setAction(ACTION_REFRESH_RSS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
         }
     }
 
@@ -2368,6 +2386,26 @@ public class MainActivity extends Activity {
                         if (seen.add(article.url) && articles.size() < 12) articles.add(article);
                     }
                 } catch (Exception error) { lastError = safeMessage(error); }
+            }
+            org.json.JSONArray rssSnapshot = new org.json.JSONArray();
+            for (RssFeedClient.Article article : articles) {
+                org.json.JSONObject item = new org.json.JSONObject();
+                try {
+                    item.put("title", article.title.length() > 300 ? article.title.substring(0, 300) : article.title)
+                            .put("url", article.url.length() > 2048 ? article.url.substring(0, 2048) : article.url)
+                            .put("source", article.source.length() > 120 ? article.source.substring(0, 120) : article.source)
+                            .put("published_at", article.publishedAt);
+                    rssSnapshot.put(item);
+                } catch (org.json.JSONException ignored) { }
+            }
+            long refreshedAt = System.currentTimeMillis();
+            AppPrefs.cacheRss(this, rssSnapshot, refreshedAt, lastError);
+            try {
+                HomeAssistantClient haClient = new HomeAssistantClient(AppPrefs.haUrl(this),
+                        SecretStore.homeAssistantToken(this), AppPrefs.haAllowHttp(this));
+                haClient.fireEvent(CompanionLinkProtocol.EVENT_UPDATE, LocalDeviceStatus.capture(this));
+            } catch (Exception error) {
+                android.util.Log.w("MorningPanelHA", "Unable to report RSS refresh", error);
             }
             if (!articles.isEmpty()) {
                 final int sourceCount = availableSources;
