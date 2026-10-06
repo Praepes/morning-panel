@@ -332,7 +332,7 @@ public class MainActivity extends Activity {
 
     static void requestRssRefresh(android.content.Context context) {
         MainActivity activity = visibleInstance;
-        if (activity != null) {
+        if (activity != null && activity.rssList != null && !activity.messageMode) {
             activity.runOnUiThread(() -> activity.refreshRss());
         } else {
             context.startActivity(new Intent(context, MainActivity.class)
