@@ -2,6 +2,7 @@ package com.morningpanel.app;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.provider.Settings;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -33,10 +34,14 @@ final class AppPrefs {
     }
 
     static String haUrl(Context c) { return preferences(c).getString("ha_url", ""); }
-    static String haProjector(Context c) { return preferences(c).getString("ha_projector", "switch.morning_panel_projector"); }
-    static String haLight(Context c) { return preferences(c).getString("ha_light", "light.morning_panel_projection"); }
-    static String haPower(Context c) { return preferences(c).getString("ha_power", "sensor.morning_panel_power_state"); }
-    static String haNextAlarm(Context c) { return preferences(c).getString("ha_next_alarm", "sensor.morning_panel_next_alarm"); }
+    static String companionLinkDeviceId(Context c) {
+        String id = Settings.Secure.getString(c.getContentResolver(), Settings.Secure.ANDROID_ID);
+        return id == null || id.trim().isEmpty() ? "android-device" : id;
+    }
+    static String haProjector(Context c) { return preferences(c).getString("ha_projector", "switch.companion_link_projector"); }
+    static String haLight(Context c) { return preferences(c).getString("ha_light", "light.companion_link_projection"); }
+    static String haPower(Context c) { return preferences(c).getString("ha_power", "sensor.companion_link_power_state"); }
+    static String haNextAlarm(Context c) { return preferences(c).getString("ha_next_alarm", "sensor.companion_link_next_alarm"); }
     static boolean haAllowHttp(Context c) { return preferences(c).getBoolean("ha_allow_http", false); }
     static void setHomeAssistant(Context c, String url, String projector, String light, String power,
                                  String nextAlarm, boolean allowHttp) {

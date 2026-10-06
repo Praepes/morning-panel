@@ -36,7 +36,7 @@ public class HomeKeepAliveService extends Service {
                     try {
                         HomeAssistantClient client = new HomeAssistantClient(AppPrefs.haUrl(thisService()),
                                 SecretStore.homeAssistantToken(thisService()), AppPrefs.haAllowHttp(thisService()));
-                        client.fireEvent(HomeAssistantProtocol.EVENT_UPDATE, LocalDeviceStatus.capture(thisService()));
+                        client.fireEvent(CompanionLinkProtocol.EVENT_UPDATE, LocalDeviceStatus.capture(thisService()));
                     } catch (Exception error) {
                         android.util.Log.w("MorningPanelHA", "Unable to report device state", error);
                     }

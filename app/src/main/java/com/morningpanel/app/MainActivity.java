@@ -1054,6 +1054,10 @@ public class MainActivity extends Activity {
         addSettingsLabel(form, "主页显示的 HA 设备");
         form.addView(entities);
         form.addView(allowHttp, marginTop(5));
+        TextView pairingId = compactText("Companion Link 配对 ID（在 HA 添加集成时输入）：\n"
+                + AppPrefs.companionLinkDeviceId(this), 13, HOME_MUTED, false);
+        pairingId.setTextIsSelectable(true);
+        form.addView(pairingId, marginTop(5));
         TextView info = compactText("令牌由 Android Keystore 加密保存，不会放入闹钟备份。本机电量、网络和屏幕状态会在连接后自动上报。", 13, HOME_MUTED, false);
         info.setLineSpacing(dp(3), 1f);
         form.addView(info, marginTop(5));
@@ -1546,10 +1550,14 @@ public class MainActivity extends Activity {
         chooseEntities.setTextSize(15);
         Button reportDevice = button("测试本机状态上报", false);
         reportDevice.setTextSize(15);
-        TextView deviceInfo = text("连接后，本机电量、充电、网络、屏幕状态与能力会自动上报。安装 Morning Panel Home Assistant 集成后，会出现本机设备及屏幕、亮度和闹钟控制；不需要逐项填写本机实体。", 13, MUTED, false);
+        TextView pairingId = text("Companion Link 配对 ID（在 HA 添加集成时输入）：\n"
+                + AppPrefs.companionLinkDeviceId(this), 13, MUTED, false);
+        pairingId.setTextIsSelectable(true);
+        TextView deviceInfo = text("连接后，本机电量、充电、网络、屏幕状态与能力会自动上报。安装 Companion Link Home Assistant 集成后，会出现对应设备与控制实体。", 13, MUTED, false);
         deviceInfo.setLineSpacing(dp(3), 1f);
         form.addView(url);
         form.addView(token);
+        form.addView(pairingId, marginTop(8));
         form.addView(text("主页显示的 HA 设备", 14, ACCENT, true), marginTop(10));
         form.addView(entities);
         form.addView(chooseEntities, marginTop(4));
@@ -1772,12 +1780,12 @@ public class MainActivity extends Activity {
                 HomeAssistantClient client = new HomeAssistantClient(base, secret, allowHttp);
                 client.ping();
                 JSONObject status = LocalDeviceStatus.capture(this);
-                client.fireEvent(HomeAssistantProtocol.EVENT_UPDATE, status);
+                client.fireEvent(CompanionLinkProtocol.EVENT_UPDATE, status);
                 JSONArray entities = client.states();
                 int integrationEntities = 0;
                 for (int i = 0; i < entities.length(); i++) {
                     String id = entities.optJSONObject(i) == null ? "" : entities.optJSONObject(i).optString("entity_id", "");
-                    if (id.toLowerCase(java.util.Locale.ROOT).contains("morning_panel")) integrationEntities++;
+                    if (id.toLowerCase(java.util.Locale.ROOT).contains("companion_link")) integrationEntities++;
                 }
                 String battery = status.optInt("battery_percent", -1) < 0 ? "未知"
                         : status.optInt("battery_percent") + "%";
@@ -1786,8 +1794,8 @@ public class MainActivity extends Activity {
                 String message = "状态事件已送达 Home Assistant。\n电量 " + battery + " · 网络 " + networkState
                         + " · 屏幕 " + screenState + " · Root " + (status.optBoolean("root_available") ? "可用" : "不可用")
                         + (integrationEntities == 0
-                        ? "\n\n当前服务器没有 Morning Panel 集成实体。请先在 HA 安装并添加集成，再检查传感器和控制项。"
-                        : "\n\n已发现 " + integrationEntities + " 个 Morning Panel 集成实体。");
+                        ? "\n\n当前服务器没有 Companion Link 集成实体。请先在 HA 安装并添加集成，再检查传感器和控制项。"
+                        : "\n\n已发现 " + integrationEntities + " 个 Companion Link 集成实体。");
                 runOnUiThread(() -> showBrandedMessage("本机状态上报结果", message));
             } catch (Exception error) {
                 String result = safeMessage(error);

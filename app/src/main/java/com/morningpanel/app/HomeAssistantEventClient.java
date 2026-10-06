@@ -116,7 +116,7 @@ final class HomeAssistantEventClient {
         JSONObject auth = new JSONObject(readTextFrame(input, output));
         if (!"auth_ok".equals(auth.optString("type"))) throw new SecurityException("Home Assistant WebSocket authentication failed");
         writeTextFrame(output, new JSONObject().put("id", 1).put("type", "subscribe_events")
-                .put("event_type", HomeAssistantProtocol.EVENT_COMMAND).toString());
+                .put("event_type", CompanionLinkProtocol.EVENT_COMMAND).toString());
         writeTextFrame(output, new JSONObject().put("id", 2).put("type", "subscribe_events")
                 .put("event_type", "state_changed").toString());
         ScheduledExecutorService heartbeat = Executors.newSingleThreadScheduledExecutor();
@@ -140,15 +140,18 @@ final class HomeAssistantEventClient {
                 publishEntityState(event.optJSONObject("data"));
                 continue;
             }
-            if (!HomeAssistantProtocol.EVENT_COMMAND.equals(eventType)) continue;
+            if (!CompanionLinkProtocol.EVENT_COMMAND.equals(eventType)) continue;
             JSONObject data = event.optJSONObject("data");
-            if (data != null) {
+            if (data != null && AppPrefs.companionLinkDeviceId(context).equals(
+                    data.optString(CompanionLinkProtocol.DEVICE_ID_KEY))) {
                 JSONObject result = LocalDeviceControl.handle(context, data);
                 try {
+                    result.put(CompanionLinkProtocol.DEVICE_ID_KEY,
+                            AppPrefs.companionLinkDeviceId(context));
                     HomeAssistantClient client = new HomeAssistantClient(AppPrefs.haUrl(context),
                             SecretStore.homeAssistantToken(context), AppPrefs.haAllowHttp(context));
-                    client.fireEvent(HomeAssistantProtocol.EVENT_COMMAND_RESULT, result);
-                    client.fireEvent(HomeAssistantProtocol.EVENT_UPDATE, LocalDeviceStatus.capture(context));
+                    client.fireEvent(CompanionLinkProtocol.EVENT_COMMAND_RESULT, result);
+                    client.fireEvent(CompanionLinkProtocol.EVENT_UPDATE, LocalDeviceStatus.capture(context));
                 } catch (Exception error) {
                     android.util.Log.w("MorningPanelHA", "Unable to report command result and device state", error);
                 }

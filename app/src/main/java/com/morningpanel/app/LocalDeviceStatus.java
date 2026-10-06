@@ -45,6 +45,10 @@ final class LocalDeviceStatus {
             DisplayMetrics display = context.getResources().getDisplayMetrics();
 
             status.put("battery_percent", percent);
+            status.put(CompanionLinkProtocol.DEVICE_ID_KEY, AppPrefs.companionLinkDeviceId(context));
+            status.put("device_name", "晨间面板");
+            status.put("client_name", "Morning Panel");
+            status.put("manufacturer", Build.MANUFACTURER);
             status.put("charging", charging);
             status.put("network_connected", networkConnected);
             status.put("network_type", networkType);

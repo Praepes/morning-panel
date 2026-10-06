@@ -17,12 +17,13 @@
 
 应用设置中由用户填写 HA 地址和长期访问令牌；令牌用 Android Keystore 加密保存。主页要显示的 HA 实体 ID 在同一设置页选择，每行一个。
 
-配套的 Home Assistant 集成单独发布在 [ha-morning-panel](https://github.com/Praepes/ha-morning-panel)，可从 HACS 添加外部仓库安装。安装后会把本机电量、充电、网络、屏幕状态、Android/应用版本、下次闹钟和控制能力作为一个 HA 设备呈现，并提供屏幕唤醒/休眠、亮度和闹钟控制实体，无需 MQTT：
+配套的 Home Assistant 集成单独发布在 [Companion Link](https://github.com/Praepes/companion-link)，可从 HACS 添加外部仓库安装。每台客户端 app 会作为独立 HA 设备呈现。Morning Panel 上报本机电量、充电、网络、屏幕状态、Android/应用版本、下次闹钟和控制能力，并提供屏幕唤醒/休眠、亮度和闹钟控制实体，无需 MQTT：
 
-1. 在 HACS 的“自定义存储库”中添加 `https://github.com/Praepes/ha-morning-panel`，类型选 **Integration**。
-2. 安装 **Morning Panel** 集成并重启 HA。
-3. 在“设置 → 设备与服务 → 添加集成”中添加 **Morning Panel**。
-4. 在 app 设置里填写 HA 地址和长期访问令牌，然后点击“测试本机状态上报”。
+1. 在 HACS 的“自定义存储库”中添加 `https://github.com/Praepes/companion-link`，类型选 **Integration**。
+2. 安装 **Companion Link** 集成并重启 HA。
+3. 在 app 的 Home Assistant 设置中复制 **Companion Link 配对 ID**，填写 HA 地址和长期访问令牌并保存。
+4. 在“设置 → 设备与服务 → 添加集成”中添加 **Companion Link**，填入配对 ID。
+5. 点击“测试本机状态上报”。
 
 唤醒使用 Android 电源唤醒锁；休眠需要应用级 Root。HA 集成还会显示下次闹钟，并在闹钟响铃时提供贪睡 10 分钟和停止按钮。可在“设置 → 设备诊断”中请求或重新检测 Root，并测试屏幕休眠/唤醒；装有 Magisk 等 Root 管理器的设备会显示授权弹窗。默认 Android 8 AVD 只有 ADB shell Root，系统自带 `su` 不会授权普通应用；可按下文方式临时注入 Magisk 测试应用级 Root。系统亮度需要在应用设置中授权“修改系统设置”。系统亮度是否同时控制 Xperia Touch 投影光学引擎，需要实机核对。
 
