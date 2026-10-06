@@ -3,7 +3,7 @@ plugins {
 }
 
 android {
-    namespace 'com.xperiatouch.clock'
+    namespace 'com.morningpanel.app'
     compileSdk 36
     buildToolsVersion '36.1.0'
 
@@ -13,7 +13,7 @@ android {
         targetSdk 28
         versionCode 3
         versionName '0.3.0'
-        testInstrumentationRunner 'com.xperiatouch.clock.ClockRenderingChecks'
+        testInstrumentationRunner 'com.morningpanel.app.ClockRenderingChecks'
     }
 
     compileOptions {

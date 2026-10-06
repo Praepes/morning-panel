@@ -34,7 +34,7 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
             <intent-filter>
-                <action android:name="com.xperiatouch.clock.SHOW_MESSAGE" />
+                <action android:name="com.morningpanel.app.SHOW_MESSAGE" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
@@ -50,7 +50,7 @@
             android:name=".AlarmReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.xperiatouch.clock.FIRE_ALARM" />
+                <action android:name="com.morningpanel.app.FIRE_ALARM" />
             </intent-filter>
         </receiver>
         <receiver
