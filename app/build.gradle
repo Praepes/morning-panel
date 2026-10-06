@@ -1,0 +1,33 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.xperiatouch.clock'
+    compileSdk 36
+    buildToolsVersion '36.1.0'
+
+    defaultConfig {
+        applicationId 'com.xperiatouch.clock'
+        minSdk 26
+        targetSdk 28
+        versionCode 3
+        versionName '0.3.0'
+        testInstrumentationRunner 'com.xperiatouch.clock.ClockRenderingChecks'
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    // Instrumentation installs and removes only a disposable application package.
+    testBuildType 'clockChecks'
+    buildTypes {
+        clockChecks {
+            initWith debug
+            applicationIdSuffix '.clockchecks'
+            matchingFallbacks = ['debug']
+        }
+    }
+}

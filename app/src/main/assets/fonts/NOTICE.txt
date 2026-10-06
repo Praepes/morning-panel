@@ -1,0 +1,5 @@
+Zhuque Fangsong Regular, release v0.212 (technical preview)
+Copyright (c) 2023, Zhejiang JadeFoci Techonology Co. LTD
+Upstream: https://github.com/TrionesType/zhuque
+The font is included unmodified under the SIL Open Font License 1.1.
+See OFL.txt in this directory for the full license.
