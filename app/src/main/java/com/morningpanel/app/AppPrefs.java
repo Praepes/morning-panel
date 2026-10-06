@@ -9,6 +9,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 final class AppPrefs {
     static final int CLOCK_STACKED = 0;
@@ -36,7 +37,14 @@ final class AppPrefs {
     static String haUrl(Context c) { return preferences(c).getString("ha_url", ""); }
     static String companionLinkDeviceId(Context c) {
         String id = Settings.Secure.getString(c.getContentResolver(), Settings.Secure.ANDROID_ID);
-        return id == null || id.trim().isEmpty() ? "android-device" : id;
+        if (id != null && !id.trim().isEmpty()) return id;
+        SharedPreferences prefs = preferences(c);
+        id = prefs.getString("companion_link_device_id", null);
+        if (id == null) {
+            id = UUID.randomUUID().toString();
+            prefs.edit().putString("companion_link_device_id", id).apply();
+        }
+        return id;
     }
     static String haProjector(Context c) { return preferences(c).getString("ha_projector", "switch.companion_link_projector"); }
     static String haLight(Context c) { return preferences(c).getString("ha_light", "light.companion_link_projection"); }
